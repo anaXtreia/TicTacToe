@@ -200,7 +200,7 @@ if __name__ == "__main__":
     previous_state = "SETUP"
     current_state = "MENU"
     board = None
-    players = ['T', 'K']
+    players = ['A', 'X']
     playerSymbols = loadSymbolDictionary_gui(players)
 
     current_player = None
