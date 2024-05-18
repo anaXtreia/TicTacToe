@@ -133,16 +133,16 @@ def winnerFound(board):
 
     for i in range(1,10,3):
         if board[i] == board[i+1] == board[i+2] and board[i] not in range(1,10):
-            print("Winner found!, Row ",i)
-            return True
+            # print("Winner found!, Row ",i)
+            return (True, board[i])
     for i in range(1,4):    
         if board[i] == board[i+3] == board[i+6] and board[i] not in range(1,10):
-            print("Winner found, Column ",i)
-            return True
+            # print("Winner found, Column ",i)
+            return (True, board[i])
     if (board[1] == board[5] == board[9] or board[3] == board[5] == board[7]) and board[5] not in range(1,10):
-        print("Winner found!, diagonal")
-        return True
-    return False
+        # print("Winner found!, diagonal")
+        return (True, board[5])
+    return (False, None)
 
 """Switches between the two players """
 def switchPlayer(players, current_player):
@@ -151,7 +151,7 @@ def switchPlayer(players, current_player):
         current_player = players[1]
     else:
         current_player = players[0]
-
+    print('sitching players')
     return current_player
 
 """
@@ -188,6 +188,68 @@ def setupGame(board, current_player, players):
     return board, current_player
 
 
+def max_alpha_beta(board, alpha, beta):
+    maxv = -2
+    play = None
+
+    (winn, result)= winnerFound(board)
+    noWinn = noOneWins(board)
+
+    if result == 'X':
+        return (-1, 0)
+    elif result == 'O':
+        return (1, 0)
+    elif noWinn:
+        return (0, 0)
+
+    for i in range(1,10):
+        if i in range(1,10) and board[i] in range(1,10):
+            board[i] = 'O'
+            (m, min_play) = min_alpha_beta(board, alpha, beta)
+            if m > maxv:
+                maxv = m
+                play = i
+            board[i] = i
+
+            if maxv >= beta:
+                return (maxv, play)
+            
+            if maxv > alpha:
+                alpha = maxv
+
+    return (maxv, play)
+
+def min_alpha_beta(board, alpha, beta):
+    minv = 2
+    play = None
+
+    (winn, result)= winnerFound(board)
+    noWinn = noOneWins(board)
+
+    if result == 'X':
+        return (-1, 0)
+    elif result == 'O':
+        return (1, 0)
+    elif noWinn:
+        return (0, 0)
+
+    for i in range(1,10):
+        if i in range(1,10) and board[i] in range(1,10):
+            board[i] = 'X'
+            (m, max_play) = max_alpha_beta(board, alpha, beta)
+            if m < minv:
+                minv = m
+                play = i
+            board[i] = i
+
+            if minv <= alpha:
+                return(minv, play)
+            
+            if minv < beta:
+                beta = minv
+
+    return (minv, play)
+
 if __name__ == "__main__":
     print("Welcome to AnaX's TicTacToe")
 
@@ -200,7 +262,7 @@ if __name__ == "__main__":
     previous_state = "SETUP"
     current_state = "MENU"
     board = None
-    players = ['A', 'X']
+    players = ['X', 'O']
     playerSymbols = loadSymbolDictionary_gui(players)
 
     current_player = None
@@ -226,22 +288,44 @@ if __name__ == "__main__":
 
         # while playing
         elif current_state == "GAME":
-            valid_play = False
-            valid_play, board = playerPlay_gui(board, current_player, events, window)
-            if valid_play:
+            if current_player == "X":
+                valid_play = False
+                valid_play, board = playerPlay_gui(board, current_player, events, window)
+                if valid_play:
+                    print(board)
+
+                    printBoard_cli(board)
+                    printBoard_gui(board, window, players, playerSymbols)
+                    (winn, result)= winnerFound(board)
+
+                    if winn:
+                            print("Player " + current_player + " won!")
+                            current_state = "GAMEOVER"
+                            printEndMenu_gui(window, players.index(current_player)+1)
+                    elif noOneWins(board):
+                        print("It's a draw!")
+                        current_state = "GAMEOVER"
+                        printEndMenu_gui(window, 0)
+
+                    current_player = switchPlayer(players, current_player)
+            else:
+                (m, play) = max_alpha_beta(board , -2, 2)
+                board[play] = 'O'
+                print(board)
                 printBoard_cli(board)
                 printBoard_gui(board, window, players, playerSymbols)
-
-                if winnerFound(board):
-                        print("Player " + current_player + " won!")
-                        current_state = "GAMEOVER"
-                        printEndMenu_gui(window, players.index(current_player)+1)
+                (winn, result)= winnerFound(board)
+                if winn:
+                    print("Player " + current_player + " won!")
+                    current_state = "GAMEOVER"
+                    printEndMenu_gui(window, players.index(current_player)+1)
                 elif noOneWins(board):
                     print("It's a draw!")
                     current_state = "GAMEOVER"
                     printEndMenu_gui(window, 0)
 
                 current_player = switchPlayer(players, current_player)
+
 
         # when game is over, in end display
         elif current_state == "GAMEOVER":
